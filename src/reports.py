@@ -100,29 +100,45 @@ class GeradorHTML:
         """
 
     def _renderizar_enrichment(self, analises):
-
         if not analises:
             return ""
 
         html = '<div class="box-enrichment">'
-        html += "<p><strong>📘 NOTAS DE CONHECIMENTO</strong></p>"
+        html += "<p><strong>🛡️ MATRIZ DE RISCOS & COMPLIANCE</strong></p>"
 
         for item in analises:
-            if item["tipo"] == "ALERTA":
-                html += f""" 
-                    <div class="card-alerta">
-                    <span class="titulo-termo">⚠️ {item['termo']} <span class="tag tag-alerta">ALERTA</span></span>
-                    {item['mensagem']}
-                </div>
-                """
-            else:
-                definicao = item.get("definicao", "Sem definição")
+            # Renderiza Riscos da Matriz (JSON Novo)
+            if item["tipo"] == "RISCO_DETECTADO":
+                # Define cor baseada no risco
+                cor_risco = (
+                    "#e74c3c"
+                    if item["nivel_risco"] in ["ALTO", "CRÍTICO"]
+                    else "#f39c12"
+                )
+                if item["nivel_risco"] == "BAIXO":
+                    cor_risco = "#27ae60"
+
                 html += f"""
-                <div class="card-conceito">
-                    <span class="titulo-termo">💡 {item['termo']} <span class="tag tag-conceito">CONCEITO</span></span>
-                    <em>{definicao}</em>
+                <div class="card-alerta" style="border-left: 5px solid {cor_risco}; background-color: #fff; padding: 10px; margin: 5px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <span class="titulo-termo" style="color: {cor_risco}; font-weight: bold;">
+                        ⚠️ {item['termo']} 
+                        <span style="background-color: {cor_risco}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">{item['nivel_risco']}</span>
+                    </span>
+                    <br>
+                    <em style="color: #555;">Ação Sugerida: {item['acao']}</em>
                 </div>
                 """
+
+            # Renderiza Alertas de Palavra-Chave (Legado)
+            elif item["tipo"] == "ALERTA_KEYWORD":
+                html += f"""
+                <div class="card-alerta" style="border-left: 5px solid #3498db; background-color: #eafaf1; padding: 10px; margin: 5px 0;">
+                    <span class="titulo-termo" style="color: #2980b9;">🔎 {item['termo']}</span>
+                    <br>
+                    <span style="color: #555;">{item['mensagem']}</span>
+                </div>
+                """
+
         html += "</div>"
         return html
 

@@ -1,20 +1,30 @@
 # Importações dos Nossos Módulos
+import os
 from src.readers import LeitorPDF
 from src.parsers import ParserLegislativo
 from src.reports import GeradorRelatorio, GeradorHTML
+from src.utils import validar_caminho_seguro
 
 
 def main():
     print("🚀 Iniciando Sistema de Análise Legislativa...")
 
     # CONFIGURAÇÃO
-    nome_arquivo = "CF ATUALIZADA.pdf"  # Certifique-se que o arquivo existe
+    # Nome da pasta segura onde os PDFs devem estar
+    PASTA_BASE = os.path.join(os.path.dirname(__file__), "inputs")
+
+    nome_arquivo = "CF_ATUALIZADA.pdf"  # Certifique-se que o arquivo existe
     pag_inicial = 14
     pag_final = 15
 
     try:
+        print("🛡️ Validando segurança do caminho do arquivo...")
+
+        # Retornar o caminho completo se for seguro, ou dar erro se for ataque
+        caminho_seguro = validar_caminho_seguro(nome_arquivo, PASTA_BASE)
+
         # 1. Leitura
-        leitor = LeitorPDF(nome_arquivo)
+        leitor = LeitorPDF(caminho_seguro)
         texto = leitor.extrair_texto(pag_inicial, pag_final)
 
         if not texto.strip():
@@ -40,8 +50,23 @@ def main():
         # gerador.gerar_markdown("relatorio_final.md")
         # print("🎉 Relatório 'relatorio_final.md' gerado com sucesso!")
 
+        # Capture o erro específico de PERMISSÃO
+        # Isso acontece se alguém tentar sair da pasta (Path Traversal)
+
+    except PermissionError as e:
+        print(f"\n🚨 [INCIDENTE DE SEGURANÇA] TENTATIVA DE ATAQUE DETECTADA!")
+        print(f"Detalhe: {e}")
+        print("Ação: Execução abortada para proteger o servidor.")
+
+        # [DESAFIO 5]: Capture o erro de ARQUIVO NÃO ENCONTRADO (separado do erro de ataque)
+    except FileNotFoundError as e:
+        print(f"\n❌ Erro: O arquivo '{nome_arquivo}' não existe na pasta 'inputs'.")
+        print(
+            "Dica: Verifique se o nome está correto e se o arquivo está na pasta certa."
+        )
+
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO: {e}")
+        print(f"❌ ERRO CRÍTICO NÃO ESPERADO: {e}")
 
 
 if __name__ == "__main__":
