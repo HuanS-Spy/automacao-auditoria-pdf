@@ -1,7 +1,7 @@
 # Importações dos Nossos Módulos
 import os
 from src.readers import LeitorPDF
-from src.parsers import ParserLegislativo
+from src.log_parser import LogParser
 from src.reports import GeradorRelatorio, GeradorHTML
 from src.utils import validar_caminho_seguro
 
@@ -13,9 +13,9 @@ def main():
     # Nome da pasta segura onde os PDFs devem estar
     PASTA_BASE = os.path.join(os.path.dirname(__file__), "inputs")
 
-    nome_arquivo = "CF_ATUALIZADA.pdf"  # Certifique-se que o arquivo existe
-    pag_inicial = 14
-    pag_final = 15
+    nome_arquivo = ""  # Certifique-se que o arquivo existe
+    pag_inicial = 1
+    pag_final = 1
 
     try:
         print("🛡️ Validando segurança do caminho do arquivo...")
@@ -34,9 +34,9 @@ def main():
         print("✅ Texto extraído.")
 
         # 2. Processamento
-        parser = ParserLegislativo()
-        dados_estruturados = parser.processar_texto_bruto(texto)
-        print(f"📊 {len(dados_estruturados)} artigos processados.")
+        parser = LogParser()
+        dados_estruturados = parser.processar_texto(texto)
+        print(f"📊 {len(dados_estruturados)} eventos/linhas processados.")
 
         # 3. Geração de Relatório (HTML)
         print("🎨 Gerando relatório HTML estilizado...")

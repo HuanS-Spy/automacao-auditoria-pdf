@@ -70,150 +70,77 @@ class GeradorRelatorio:
 
 
 class GeradorHTML:
-    def __init__(self, dados_estruturados):
-        self.dados = dados_estruturados
-        self.html_content = ""
+    def __init__(self, dados):
+        # Agora self.dados recebe a lista de eventos (logs) gerada pelo LogParser
+        self.dados = dados
 
-        self.css = """
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
-            h2 { color: #2980b9; margin-top: 30px; border-left: 5px solid #2980b9; padding-left: 10px; }
-            .meta { text-align: center; color: #7f8c8d; font-size: 0.9em; margin-bottom: 40px; }
-            
-            .artigo-texto { font-size: 1.1em; margin-bottom: 15px; }
-            .paragrafo { font-weight: bold; margin-left: 20px; color: #444; }
-            .inciso { margin-left: 40px; }
-            .alinea { margin-left: 60px; font-style: italic; }
-            
-            /* Caixas de Enriquecimento */
-            .box-enrichment { background-color: #f9f9f9; border-radius: 5px; padding: 15px; margin: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-            
-            .card-conceito { border-left: 4px solid #27ae60; background-color: #eafaf1; padding: 10px; margin-bottom: 5px; }
-            .card-alerta { border-left: 4px solid #c0392b; background-color: #fadbd8; padding: 10px; margin-bottom: 5px; }
-            
-            .titulo-termo { font-weight: bold; display: block; margin-bottom: 4px; }
-            .tag { display: inline-block; padding: 2px 6px; font-size: 0.8em; border-radius: 4px; color: white; margin-left: 5px;}
-            .tag-alerta { background-color: #c0392b; }
-            .tag-conceito { background-color: #27ae60; }
-        </style>
-        """
-
-    def _renderizar_enrichment(self, analises):
-        if not analises:
-            return ""
-
-        html = '<div class="box-enrichment">'
-        html += "<p><strong>🛡️ MATRIZ DE RISCOS & COMPLIANCE</strong></p>"
-
-        for item in analises:
-            # Renderiza Riscos da Matriz (JSON Novo)
-            if item["tipo"] == "RISCO_DETECTADO":
-                # Define cor baseada no risco
-                cor_risco = (
-                    "#e74c3c"
-                    if item["nivel_risco"] in ["ALTO", "CRÍTICO"]
-                    else "#f39c12"
-                )
-                if item["nivel_risco"] == "BAIXO":
-                    cor_risco = "#27ae60"
-
-                html += f"""
-                <div class="card-alerta" style="border-left: 5px solid {cor_risco}; background-color: #fff; padding: 10px; margin: 5px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <span class="titulo-termo" style="color: {cor_risco}; font-weight: bold;">
-                        ⚠️ {item['termo']} 
-                        <span style="background-color: {cor_risco}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">{item['nivel_risco']}</span>
-                    </span>
-                    <br>
-                    <em style="color: #555;">Ação Sugerida: {item['acao']}</em>
-                </div>
-                """
-
-            # Renderiza Alertas de Palavra-Chave (Legado)
-            elif item["tipo"] == "ALERTA_KEYWORD":
-                html += f"""
-                <div class="card-alerta" style="border-left: 5px solid #3498db; background-color: #eafaf1; padding: 10px; margin: 5px 0;">
-                    <span class="titulo-termo" style="color: #2980b9;">🔎 {item['termo']}</span>
-                    <br>
-                    <span style="color: #555;">{item['mensagem']}</span>
-                </div>
-                """
-
-        html += "</div>"
-        return html
-
-    def processar_item(self, item):
-        html = ""
-
-        # Renderiza o Texto Legislativo
-        if item["tipo"] == "ARTIGO":
-            html += f"<h2>{item['cabecalho']}</h2>"
-
-            # --- LÓGICA DE LIMPEZA VISUAL ---
-            texto_exibicao = item["texto"]
-            cabecalho = item["cabecalho"]
-
-            # Se o texto começar com "Art. 5º", removemos esse pedaço
-            # e também removemos hifens ou espaços extras que sobrarem
-            if texto_exibicao.lower().startswith(cabecalho.lower()):
-                texto_exibicao = texto_exibicao[len(cabecalho) :].strip(" -–—")
-
-            # Se o texto ficou vazio (ex: o artigo estava só na linha de cima e o texto embaixo),
-            # não exibe nada, caso contrário exibe o texto limpo.
-            if texto_exibicao:
-                html += f"<div class='artigo-texto'>{texto_exibicao}</div>"
-
-        elif item["tipo"] == "PARAGRAFO":
-            html += f"<div class='paragrafo'>{item['texto']}</div>"
-
-        elif item["tipo"] == "INCISO":
-            html += f"<div class='inciso'>• {item['texto']}</div>"
-
-        elif item["tipo"] == "ALINEA":
-            html += f"<div class='alinea'>{item['texto']}</div>"
-
-        # Renderiza Análises (Glossário)
-        if item.get("analise"):
-            html += self._renderizar_enrichment(item["analise"])
-
-        # Recursividade para Filhos
-        if "filhos" in item:
-            for filho in item["filhos"]:
-                html += self.processar_item(filho)
-
-        if item["tipo"] == "ARTIGO":
-            html += "<hr>"  # Linha horizontal visual
-
-        return html
-
-    def gerar_html(self, nome_arquivo="relatorio_final.html"):
-        data_hoje = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-
-        full_html = f"""
-        <!DOCTYPE html>
+    def gerar_html(self, caminho_saida):
+        # CSS Básico focado em visualização de SOC (Dark/Light mode simples)
+        html = """
         <html>
         <head>
-            <meta charset="UTF-8">
-            <title>Relatório Legislativo</title>
-            {self.css}
+            <meta charset='utf-8'>
+            <title>Relatório de Auditoria SOC/DLP</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; padding: 20px; color: #333; }
+                h2 { color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; }
+                .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .alert { border-left: 6px solid #e74c3c; }
+                .success { border-left: 6px solid #2ecc71; background-color: #eafaf1; color: #27ae60; font-weight: bold; text-align: center; padding: 30px;}
+                .warning-title { color: #e74c3c; margin-top: 0; }
+                .log-line { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; border: 1px solid #ddd; word-wrap: break-word;}
+                ul { margin-top: 10px; }
+                li { margin-bottom: 8px; }
+            </style>
         </head>
         <body>
-            <h1>Relatório de Análise Legislativa</h1>
-            <div class="meta">Gerado automaticamente em: {data_hoje}</div>
-            
-            <div class="conteudo">
+            <h2>🛡️ Relatório de Auditoria e Logs (DLP)</h2>
         """
 
-        for artigo in self.dados:
-            full_html += self.processar_item(artigo)
+        alertas_gerados = 0
 
-        full_html += """
+        # Iterando sobre cada linha/evento processado pelo nosso motor
+        for evento in self.dados:
+
+            # Busca a lista de ameaças daquela linha específica
+            alertas = evento.get("alertas", [])
+
+            # Só renderiza o card no HTML se houver alguma ameaça (SOC silencioso para logs normais)
+            if alertas:
+                alertas_gerados += 1
+                linha = evento.get("linha_origem", "Desconhecida")
+                texto_vazado = evento.get("texto", "Texto indisponível")
+
+                html += f"<div class='card alert'>"
+                html += f"<h3 class='warning-title'>⚠️ Ameaça Detectada na Linha {linha}</h3>"
+                html += f"<p><strong>Trecho Original do Log/Documento:</strong></p>"
+                html += f"<div class='log-line'>{texto_vazado}</div>"
+                html += "<ul>"
+
+                # Lista todas as violações encontradas naquela mesma linha
+                for alerta in alertas:
+                    tipo = alerta.get("tipo", "ALERTA")
+                    mensagem = alerta.get("mensagem", "Verifique este item.")
+                    acao = alerta.get("acao", "")
+
+                    html += f"<li><strong>[{tipo}]</strong> {mensagem}"
+                    if acao:
+                        html += f"<br><em>Recomendação: {acao}</em>"
+                    html += "</li>"
+
+                html += "</ul></div>"
+
+        # Se o motor rodou tudo e não achou nada, exibe o selo de segurança
+        if alertas_gerados == 0:
+            html += """
+            <div class='card success'>
+                <h2>✅ Ambiente Seguro</h2>
+                <p>Nenhum dado sensível (PII), anomalia ou violação de política foi detectado nos registros analisados.</p>
             </div>
-        </body>
-        </html>
-        """
+            """
 
-        with open(nome_arquivo, "w", encoding="utf-8") as f:
-            f.write(full_html)
+        html += "</body></html>"
 
-        return full_html
+        # Salva o arquivo final
+        with open(caminho_saida, "w", encoding="utf-8") as f:
+            f.write(html)
